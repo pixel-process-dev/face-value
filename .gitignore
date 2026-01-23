@@ -1,0 +1,37 @@
+# ----------------------------
+# Data (never track)
+# ----------------------------
+data/
+raw/
+processed/
+
+# ----------------------------
+# Model artifacts
+# ----------------------------
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# ----------------------------
+# Local outputs
+# ----------------------------
+outputs/
+logs/
+*.parquet
+*.csv
+*.feather
+
+# ----------------------------
+# Python
+# ----------------------------
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# ----------------------------
+# Environments & secrets
+# ----------------------------
+.env
+.venv/
+conda-meta/
