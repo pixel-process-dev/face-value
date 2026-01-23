@@ -1,1 +1,1 @@
-# face-value
+Face Value is a hosted affective signal model that estimates facial expression distributions from images and video. Rather than optimizing for benchmark accuracy alone, the system is evaluated using face-valid external criteria, including generalization to established emotion datasets and aggregate behavioral alignment on culturally stable stimuli such as film.
