@@ -21,6 +21,7 @@ logs/
 *.parquet
 *.csv
 *.feather
+*.tflite
 
 # ----------------------------
 # Python
