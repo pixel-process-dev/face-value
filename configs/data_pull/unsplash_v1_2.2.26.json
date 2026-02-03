@@ -1,0 +1,35 @@
+{
+  "source": "unsplash",
+
+  "search": {
+    "emotions": {
+      "angry": ["angry"],
+      "disgust": ["disgust"],
+      "fear": ["fear"],
+      "happy": ["happy"],
+      "sad": ["sad"],
+      "surprise": ["surprised"],
+      "neutral": ["neutral"]
+    },
+    "keyword_template": "{emotion} face",
+    "per_page": 30,
+    "max_pages": 30,
+    "order_by": "relevant"
+  },
+
+  "output": {
+    "raw_image_dir": "../../data/raw/unsplash_v1",
+    "manifest_path": "../../data/raw/unsplash_v1/manifest.parquet",
+    "run_log_path": "../../data/raw/unsplash_v1/run_log.parquet",
+    "seen_ids_path": "../../data/raw/unsplash_v1/seen_ids.parquet"
+  },
+
+  "rate_limit": {
+    "min_remaining_requests": 20,
+    "sleep_seconds_on_low_remaining": 30
+  },
+
+  "early_stop": {
+    "min_new_fraction": 0.1
+  }
+}

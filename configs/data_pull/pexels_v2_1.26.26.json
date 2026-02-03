@@ -1,0 +1,34 @@
+{
+  "source": "pexels",
+
+  "search": {
+    "emotions": {
+      "angry": ["angry", "mad", "irate"],
+      "disgust": ["disgusted", "gross", "repulsed"],
+      "fear": ["fear", "afraid", "scared"],
+      "happy": ["happy", "smiling", "joyful"],
+      "sad": ["sad", "crying", "unhappy"],
+      "surprise": ["surprised", "shocked", "astonished"],
+      "neutral": ["neutral", "calm", "expressionless"]
+  },
+    "keyword_template": "{keyword}",
+    "per_page": 80,
+    "max_pages": 10
+  },
+
+  "output": {
+    "raw_image_dir": "../../data/raw/pexels_v2",
+    "manifest_path": "../../data/raw/pexels_v2/manifest.parquet",
+    "run_log_path": "../../data/raw/pexels_v2/run_log.parquet",
+    "seen_ids_path": "../../data/raw/pexels_v2/seen_ids.parquet"
+  },
+
+  "rate_limit": {
+    "min_remaining_requests": 20,
+    "sleep_seconds_on_low_remaining": 30
+  },
+
+  "early_stop": {
+    "min_new_fraction": 0.1
+  }
+}

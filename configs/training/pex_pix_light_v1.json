@@ -1,0 +1,33 @@
+{
+  "run_name": "pex-pix-light-v1",
+  "data_source": "pex-pix-v1",
+  "metadata_path": "../data/processed/training_files/pex_pixa_v1.parquet",
+  "output_dir": "../models/pex_pixa_v1",
+  
+  "training": {
+    "epochs": 30,
+    "batch_size": 32,
+    "learning_rate": 0.0003,
+    "optimizer": "adam",
+    "optimizer_kwargs": {},
+    "scheduler": "none",
+    "scheduler_kwargs": {},
+    "seed": 42
+  },
+  
+  "data": {
+    "image_size": 224,
+    "transform_preset": "imagenet",
+    "augmentation": "light"
+  },
+  
+  "model": {
+    "architecture": "resnet18",
+    "pretrained": "IMAGENET1K_V1",
+    "unfrozen_layers": ["layer3", "layer4", "fc"]
+  },
+  
+  "mlflow": {
+    "experiment_name": "emotion-movie-transfer"
+  }
+}
