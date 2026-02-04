@@ -42,3 +42,4 @@ conda-meta/
 # ML Flow
 # ----------------------------
 mlruns/
+*.db
