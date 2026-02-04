@@ -2,6 +2,7 @@
   "source": "pexels",
 
   "search": {
+    "api_url":"https://api.pexels.com/v1/search",
     "emotions": {
       "angry": ["angry", "mad", "irate"],
       "disgust": ["disgusted", "gross", "repulsed"],
@@ -18,9 +19,9 @@
 
   "output": {
     "raw_image_dir": "../../data/raw/pexels_v2",
-    "manifest_path": "../../data/raw/pexels_v2/manifest.parquet",
-    "run_log_path": "../../data/raw/pexels_v2/run_log.parquet",
-    "seen_ids_path": "../../data/raw/pexels_v2/seen_ids.parquet"
+    "manifest_filename": "manifest.parquet",
+    "run_log_filename": "run_log.parquet",
+    "seen_ids_filename": "seen_ids.parquet"
   },
 
   "rate_limit": {

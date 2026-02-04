@@ -4,13 +4,8 @@
   "search": {
     "api_url":"https://pixabay.com/api/",
     "emotions": {
-      "angry": ["angry"],
-      "disgust": ["disgust"],
-      "fear": ["fear"],
-      "happy": ["happy"],
-      "sad": ["sad"],
-      "surprise": ["surprised"],
-      "neutral": ["neutral"]
+      "contempt": ["contempt"],
+      "joy": ["joy"]
     },
     "keyword_template": "{emotion} face",
     "per_page": 200,
@@ -18,7 +13,7 @@
   },
 
   "output": {
-    "raw_image_dir": "../../data/raw/pixabay_v1",
+    "raw_image_dir": "../../data/raw/pixabay_test",
     "manifest_filename": "manifest.parquet",
     "run_log_filename": "run_log.parquet",
     "seen_ids_filename": "seen_ids.parquet"

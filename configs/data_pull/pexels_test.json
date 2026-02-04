@@ -1,17 +1,11 @@
 {
   "source": "pexels",
-  
 
   "search": {
     "api_url":"https://api.pexels.com/v1/search",
     "emotions": {
-      "angry": ["angry"],
-      "disgust": ["disgust"],
-      "fear": ["fear"],
-      "happy": ["happy"],
-      "sad": ["sad"],
-      "surprise": ["surprised"],
-      "neutral": ["neutral"]
+      "contempt": ["contempt"],
+      "joy": ["joy"]
     },
     "keyword_template": "{keyword} face",
     "per_page": 80,
@@ -19,7 +13,7 @@
   },
 
   "output": {
-    "raw_image_dir": "../../data/raw/pexels_v1",
+    "raw_image_dir": "../../data/raw/pexels_test",
     "manifest_filename": "manifest.parquet",
     "run_log_filename": "run_log.parquet",
     "seen_ids_filename": "seen_ids.parquet"

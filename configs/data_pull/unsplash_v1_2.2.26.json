@@ -2,6 +2,7 @@
   "source": "unsplash",
 
   "search": {
+    "api_url": "https://api.unsplash.com/search/photos",
     "emotions": {
       "angry": ["angry"],
       "disgust": ["disgust"],
@@ -19,9 +20,9 @@
 
   "output": {
     "raw_image_dir": "../../data/raw/unsplash_v1",
-    "manifest_path": "../../data/raw/unsplash_v1/manifest.parquet",
-    "run_log_path": "../../data/raw/unsplash_v1/run_log.parquet",
-    "seen_ids_path": "../../data/raw/unsplash_v1/seen_ids.parquet"
+    "manifest_filename": "manifest.parquet",
+    "run_log_filename": "run_log.parquet",
+    "seen_ids_filename": "seen_ids.parquet"
   },
 
   "rate_limit": {
