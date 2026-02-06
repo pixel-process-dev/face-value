@@ -153,7 +153,7 @@ def main(config_path: str):
     print("\nIngestion + download complete.")
     print(f"Total API requests used: {request_count}")
     print(f"Total unique images seen: {len(seen_ids)}")
-
+    
 
 if __name__ == "__main__":
     import sys

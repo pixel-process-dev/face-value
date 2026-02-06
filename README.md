@@ -10,6 +10,21 @@ A computer vision project demonstrating that domain-matched weak supervision can
 
 **Key Finding:** Models trained on domain-matched data with weak supervision (80% accuracy) show more interpretable patterns and emotional diversity than models trained on curated datasets with 90% accuracy.
 
+## TOC
+- [Results Summary](#results-summary)
+- [Technical Approach](#technial-approach)
+- [Validation Methodology](#validation-methodology)
+- [Limitations & Future Work](#limitations--future-work)
+- [Repository Structure](#repository-structure)
+- [Installation and Usage](#installation--usage)
+- [Key Takeaways](#key-takeaways)
+- [Citation and Contact](#citation--contact)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
+Additional details available for [Methods](METHODS.md) and [Results](RESULTS.md).
+
+
 ## Results Summary
 
 ### Model Comparison
@@ -39,6 +54,7 @@ Face Value             |  RAF
 4. **Minimal data requirements:** <5,000 total images across 5 emotion classes sufficient for meaningful patterns
 
 ## Technical Approach
+[Back to Top](#toc)
 
 ### Data Collection & Curation
 
@@ -74,6 +90,7 @@ Face Value             |  RAF
 - **Augmentation:** Standard (flips, rotations, color jitter)
 
 ## Validation Methodology
+[Back to Top](#toc)
 
 ### Movie Timeline Analysis
 
@@ -116,6 +133,7 @@ Face Value             |  RAF
 ![](images/fv_timeplot_300.png)  |  ![](images/raf_timeplot_300.png)
 
 ## Limitations & Future Work
+[Back to Top](#toc)
 
 ### Current Limitations
 
@@ -135,34 +153,45 @@ Face Value             |  RAF
 4. **Ablation studies:** Isolate contribution of each keyword, data source effects
 
 ## Repository Structure
+[Back to Top](#toc)
 
 ```
 face-value/
+├── configs/
+│   ├── data_pull/        # Handles api/search criteria
+│   └── training/         # Models, augmentation, hyperparameters
 ├── data/
 │   ├── raw/              # Downloaded stock photos
-│   └── processed/        # Face crops, train/val splits
+│   ├── processed/        # Face crops, train/val splits
+│   ├── FER-2013          # Standardized data
+│   └── RAF-DF            # Standardized data
+├── evaluation/           # Movie outputs/model
 ├── models/
 │   ├── face_value/       # Trained model checkpoints
 │   ├── raf_comparison/   # RAF-DB baseline
 │   └── fer_comparison/   # FER2013 baseline
 ├── notebooks/
-│   ├── 01_data_collection.ipynb
-│   ├── 02_training.ipynb
-│   ├── 03_movie_analysis.ipynb
-│   └── 04_comparisons.ipynb
+│   ├── model_metrics_and_comparison.ipynb
+│   ├── movie_evaluation_and_comparison.ipynb
+│   ├── training_file_face_value.ipynb 
+│   ├── training_file_for_FER2013.ipynb
+│   └── training_file_for_RAF.ipynb
 ├── src/
-│   ├── data/            # Data loading, augmentation
-│   ├── models/          # Model architectures
-│   ├── training/        # Training loops
-│   └── inference/       # Movie analysis pipeline
-├── results/
-│   ├── timelines/       # Movie emotion timeline plots
-│   ├── comparisons/     # Model comparison visualizations
-│   └── metrics/         # Performance statistics
-└── README.md
+│   ├── api_pulls/            # API requests
+│   ├── movie_evaluation/     # Movied specific analysis
+│   ├── utils/                # Common shared functions
+│   ├── batch_runner.py       # Run multiple trainings
+│   ├── face_extraction.py    # Creates face images based on pulled data
+│   ├── model_config.py       # Shared model and augmentation settings
+│   └── train_from_config.py  # Train a single model
+├── README.md                 # Project overview
+├── METHODS.md                # Deeper dive into data curation/approach
+├── RESULTS.md                # Deeper dive into comparison across models
+└── environment.yml           # Packages and versions
 ```
 
 ## Installation & Usage
+[Back to Top](#toc)
 
 ```bash
 # Clone repository
@@ -171,15 +200,47 @@ cd face-value
 
 # Install dependencies
 conda env create -f environment.yml
+```
 
-# Download pretrained model
-# [Instructions for model download]
+### Additional Software/Access
+  - MediaPipe FaceDetector
+  - ResNet for Pytorch
+  - API key for relevant sources
 
-# Run movie analysis
-python src/inference/analyze_movie.py --movie path/to/movie.mp4
+### Run Pipeline
+
+```bash
+# Pull data based on cofig
+python src/api_pulls/pixabay_pull.py ../configs/data_pull/pixabay_v1.json
+
+# Extract Faces
+python src/face_extraction.py --raw_dir data/raw/pixabay_v1 --out_dir data/processed/pixabay_v1
+
+# EDA/clean pulled data:
+# notebooks/training_file_face_value.ipynb 
+
+# Train model 
+python src/train_from_config.py --config configs/training/pixabay_v1
+
+# Model metrics (designed for multiple comparison and test datasets):
+# notebooks/model_metrics_and_comparison.ipynb
+
+# Run movie analysis with mlflow run id
+python src/movie_evaluation/evaluate_movies.py \
+    --run-id 21bec48063d549d4a97f6c8eaa1bd856 \
+    --checkpoint models/pixabay_light_aug_v1/model.pt \
+    --movies-dir ~/Movies \
+    --movie-list src/movie_evaluation/movie_list.txt \
+    --output-dir ../../evaluation/pixabay_v1/movies \
+    --face-detector ../../models/mediapipe_face_detector/detector.tflite
+
+# Movie evalutation:
+# notebooks/movie_evaluation_and_comparison.ipynb
+
 ```
 
 ## Key Takeaways
+[Back to Top](#toc)
 
 **For ML Practitioners:**
 - Benchmark accuracy doesn't guarantee real-world generalization
@@ -204,8 +265,10 @@ python src/inference/analyze_movie.py --movie path/to/movie.mp4
 - **Experiment Tracking:** MLflow
 - **APIs:** Pexels, Pixabay
 
-## Citation
+## Citation & Contact
+[Back to Top](#toc)
 
+### Citation
 If you use this work, please cite:
 
 ```bibtex
@@ -216,17 +279,7 @@ If you use this work, please cite:
   url = {https://github.com/pixel-process/face-value}
 }
 ```
-## Model Availability
-
-Pre-trained weights are not provided as the model is easily reproducible 
-in 2-3 hours using the provided training pipeline. The full codebase, 
-training configuration, and dataset collection scripts are included for 
-complete reproducibility.
-
-For specific use cases requiring pre-trained weights, please contact 
-dexterous.data.llc@gmail.com.
-
-## Contact
+### Contact
 
 Daniel Lumian, PhD  
 [Dexterous Data](https://www.dexterousdata.com)  
@@ -235,6 +288,7 @@ dexterous.data.llc@gmail.com
 For consulting inquiries on ML prototyping and validation methodology, please reach out.
 
 ## Acknowledgments
+[Back to Top](#toc)
 
 - Stock photo sources: Pexels and Pixabay APIs
 - Face detection: MediaPipe by Google
@@ -242,9 +296,14 @@ For consulting inquiries on ML prototyping and validation methodology, please re
 - Baseline datasets: RAF-DB, FER2013
 
 ## License
+[Back to Top](#toc)
 
 [Your chosen license]
 
 ---
 
 **Note:** This is a research and portfolio project demonstrating applied ML methodology. The models are not intended for production use without further validation and bias mitigation.
+
+**Model Availability:** Pre-trained weights are not provided as the model is easily reproducible in 2-3 hours using the provided training pipeline. The full codebase, training configuration, and dataset collection scripts are included for complete reproducibility. For specific use cases requiring pre-trained weights, please contact dexterous.data.llc@gmail.com.
+
+[Back to Top](#toc)
