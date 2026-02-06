@@ -1,7 +1,7 @@
 {
   "run_name": "pex-pix-light-v1",
   "data_source": "pex-pix-v1",
-  "metadata_path": "../data/processed/training_files/pex_pixa_v1.parquet",
+  "metadata_path": "../data/training_files/pex_pixa_v1.parquet",
   "output_dir": "../models/pex_pixa_v1",
   
   "training": {

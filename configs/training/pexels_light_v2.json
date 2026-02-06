@@ -1,7 +1,7 @@
 {
   "run_name": "pexels-light-v2",
   "data_source": "pexels-v2",
-  "metadata_path": "../data/processed/pexels_v2/summaries/training_data.parquet",
+  "metadata_path": "../data/pexels_v2/summaries/training_data.parquet",
   "output_dir": "../models/pexels_light_aug_v2",
   
   "training": {

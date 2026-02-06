@@ -1,8 +1,8 @@
 {
-  "run_name": "pexels-light-v1",
-  "data_source": "pexels-v1",
-  "metadata_path": "../data/pexels_v1/summaries/training_data.parquet",
-  "output_dir": "../models/pexels_light_aug_v1",
+  "run_name": "rad-db",
+  "data_source": "raf-db",
+  "metadata_path": "../data/raf-db/DATASET/raf_train_trimmed.parquet",
+  "output_dir": "../models/raf_db",
   
   "training": {
     "epochs": 30,

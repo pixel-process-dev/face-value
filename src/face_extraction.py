@@ -1,59 +1,20 @@
 from pathlib import Path
-import os
+import mediapipe as mp
 
 import numpy as np
 import polars as pl
 from PIL import Image
 import plotly.express as px
 
-import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
 
-
-# -----------------------------
-# Configuration
-# -----------------------------
-
-MODEL_PATH = Path("../models/mediapipe_face_detector/detector.tflite")
-MIN_DETECTION_CONFIDENCE = 0.5
-
-IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
-
-
-# -----------------------------
-# Utilities
-# -----------------------------
-
-def ensure_dir(path: Path):
-    path.mkdir(parents=True, exist_ok=True)
-
-
-def list_images(root: Path):
-    return [
-        p for p in root.rglob("*")
-        if p.is_file() and p.suffix.lower() in IMAGE_EXTS
-    ]
-
-
-def rel_id(path: Path, root: Path) -> str:
-    return str(path.relative_to(root)).replace(os.sep, "__")
-
-# -----------------------------
-# MediaPipe setup
-# -----------------------------
-
-base_options = python.BaseOptions(
-    model_asset_path=str(MODEL_PATH)
+from utils.fv_utils import (
+    ensure_dir, 
+    list_images, 
+    rel_id,
+    get_detector
 )
 
-options = vision.FaceDetectorOptions(
-    base_options=base_options,
-    min_detection_confidence=MIN_DETECTION_CONFIDENCE,
-)
-
-detector = vision.FaceDetector.create_from_options(options)
-
+detector = get_detector()
 
 # -----------------------------
 # Core processing 

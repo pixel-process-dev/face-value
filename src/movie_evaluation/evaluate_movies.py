@@ -386,47 +386,47 @@ def evaluate_model_on_movies(
         min_face_confidence=min_face_confidence,
     )
     
-    # Log to MLflow
-    print("Logging results to MLflow...")
-    with mlflow.start_run(run_id=run_id):
-        # Log movie evaluation metrics
-        mlflow.log_metric("eval_movies_total_faces", summary["total_faces_detected"])
-        mlflow.log_metric("eval_movies_avg_confidence", summary["avg_confidence"])
-        mlflow.log_metric("eval_movies_count", summary["total_movies"])
-        mlflow.log_metric("eval_movies_avg_per_movie", summary["avg_faces_per_movie"])
+    # # Log to MLflow
+    # print("Logging results to MLflow...")
+    # with mlflow.start_run(run_id=run_id):
+    #     # Log movie evaluation metrics
+    #     mlflow.log_metric("eval_movies_total_faces", summary["total_faces_detected"])
+    #     mlflow.log_metric("eval_movies_avg_confidence", summary["avg_confidence"])
+    #     mlflow.log_metric("eval_movies_count", summary["total_movies"])
+    #     mlflow.log_metric("eval_movies_avg_per_movie", summary["avg_faces_per_movie"])
         
-        # Log emotion distribution in movies
-        for item in summary["emotion_distribution"]:
-            emotion = item["emotion"]
-            count = item["count"]
-            pct = count / summary["total_faces_detected"] * 100
-            mlflow.log_metric(f"eval_movies_{emotion}_count", count)
-            mlflow.log_metric(f"eval_movies_{emotion}_pct", pct)
+    #     # Log emotion distribution in movies
+    #     for item in summary["emotion_distribution"]:
+    #         emotion = item["emotion"]
+    #         count = item["count"]
+    #         pct = count / summary["total_faces_detected"] * 100
+    #         mlflow.log_metric(f"eval_movies_{emotion}_count", count)
+    #         mlflow.log_metric(f"eval_movies_{emotion}_pct", pct)
         
-        # Log dominant emotion distribution
-        for item in summary["dominant_emotion_distribution"]:
-            emotion = item["emotion"]
-            count = item["count"]
-            pct = count / summary["total_movies"] * 100
-            mlflow.log_metric(f"eval_movies_dominant_{emotion}_count", count)
-            mlflow.log_metric(f"eval_movies_dominant_{emotion}_pct", pct)
+    #     # Log dominant emotion distribution
+    #     for item in summary["dominant_emotion_distribution"]:
+    #         emotion = item["emotion"]
+    #         count = item["count"]
+    #         pct = count / summary["total_movies"] * 100
+    #         mlflow.log_metric(f"eval_movies_dominant_{emotion}_count", count)
+    #         mlflow.log_metric(f"eval_movies_dominant_{emotion}_pct", pct)
         
-        # Save combined movie results as artifact
-        mlflow.log_artifact(str(output_dir / "combined_results.parquet"))
+    #     # Save combined movie results as artifact
+    #     mlflow.log_artifact(str(output_dir / "combined_results.parquet"))
         
-        # Save summary as JSON
-        summary_path = output_dir / "movie_evaluation_summary.json"
-        with open(summary_path, "w") as f:
-            json.dump(summary, f, indent=2, default=str)
-        mlflow.log_artifact(str(summary_path))
+    #     # Save summary as JSON
+    #     summary_path = output_dir / "movie_evaluation_summary.json"
+    #     with open(summary_path, "w") as f:
+    #         json.dump(summary, f, indent=2, default=str)
+    #     mlflow.log_artifact(str(summary_path))
         
-        # Tag as evaluated
-        mlflow.set_tag("movie_evaluation_status", "complete")
+    #     # Tag as evaluated
+    #     mlflow.set_tag("movie_evaluation_status", "complete")
     
-    print("\nMLflow logging complete!")
-    print(f"\n{'='*60}")
-    print("EVALUATION COMPLETE")
-    print(f"{'='*60}\n")
+    # print("\nMLflow logging complete!")
+    # print(f"\n{'='*60}")
+    # print("EVALUATION COMPLETE")
+    # print(f"{'='*60}\n")
 
 
 # -------------------------
@@ -467,3 +467,4 @@ if __name__ == "__main__":
         min_face_confidence=args.min_face_confidence,
         device=args.device,
     )
+

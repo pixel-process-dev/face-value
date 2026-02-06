@@ -1,8 +1,8 @@
 {
   "run_name": "pixabay-light-v3",
   "data_source": "pixabay-v3",
-  "metadata_path": "../data/processed/training_files/pixabay_v3.parquet",
-  "output_dir": "../models/pixabay_light_aug_v3",
+  "metadata_path": "../data/training_files/pixabay_v3_primary.parquet",
+  "output_dir": "../models/pixabay_light_aug_v3_prime",
   
   "training": {
     "epochs": 30,

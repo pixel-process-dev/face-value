@@ -1,7 +1,7 @@
 {
   "run_name": "pixabay-light-v1",
   "data_source": "pixabay-v1",
-  "metadata_path": "../data/processed/pixabay_v1/summaries/training_data.parquet",
+  "metadata_path": "../data/pixabay_v1/summaries/training_data.parquet",
   "output_dir": "../models/pixabay_light_aug_v1",
   
   "training": {

@@ -5,6 +5,8 @@ data/
 raw/
 processed/
 archive/ 
+models/
+evaluation/ 
 
 # ----------------------------
 # Model artifacts

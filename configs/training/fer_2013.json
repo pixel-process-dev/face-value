@@ -1,8 +1,8 @@
 {
-  "run_name": "pexels-light-v1",
-  "data_source": "pexels-v1",
-  "metadata_path": "../data/pexels_v1/summaries/training_data.parquet",
-  "output_dir": "../models/pexels_light_aug_v1",
+  "run_name": "fer-2013",
+  "data_source": "fer-2013",
+  "metadata_path": "../data/fer-2013/fer2013_train_trimmed.parquet",
+  "output_dir": "../models/fer_2013",
   
   "training": {
     "epochs": 30,
@@ -17,7 +17,7 @@
   
   "data": {
     "image_size": 224,
-    "transform_preset": "imagenet",
+    "transform_preset": "grayscale",
     "augmentation": "light"
   },
   

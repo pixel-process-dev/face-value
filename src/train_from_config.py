@@ -12,16 +12,23 @@ from datetime import datetime
 
 import torch
 from torch import nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torchvision import models
-from PIL import Image
+from torchmetrics.classification import ConfusionMatrix
+
 import polars as pl
 import mlflow
 import mlflow.pytorch
 
-from torchmetrics.classification import ConfusionMatrix
+from utils.fv_utils import (
+    ensure_dir
+)
 
-# Import config utilities
+from utils.model_utils import (
+    FaceDataset,
+    evaluate_with_outputs
+)
+
 from model_config import (
     get_transform_preset,
     get_optimizer,
@@ -29,30 +36,6 @@ from model_config import (
     get_config_summary,
     validate_config,
 )
-
-
-# -------------------------
-# Dataset
-# -------------------------
-
-class FaceDataset(Dataset):
-    def __init__(self, df, transform=None):
-        self.paths = df["face_path"].to_list()
-        self.labels = df["label"].to_list()
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.paths)
-
-    def __getitem__(self, idx):
-        img = Image.open(self.paths[idx]).convert("RGB")
-        if self.transform:
-            img = self.transform(img)
-
-        label = torch.tensor(self.labels[idx], dtype=torch.long)
-        return img, label
-
-
 # -------------------------
 # Training helpers
 # -------------------------
@@ -73,33 +56,6 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
         total_loss += loss.item()
 
     return total_loss / len(loader)
-
-
-@torch.no_grad()
-def evaluate_with_outputs(model, loader, device):
-    model.eval()
-
-    all_labels = []
-    all_preds = []
-    all_probs = []
-
-    for x, y in loader:
-        x = x.to(device)
-        y = y.to(device)
-
-        logits = model(x)
-        probs = torch.softmax(logits, dim=1)
-        preds = probs.argmax(dim=1)
-
-        all_labels.append(y.cpu())
-        all_preds.append(preds.cpu())
-        all_probs.append(probs.cpu())
-
-    return {
-        "labels": torch.cat(all_labels),
-        "preds": torch.cat(all_preds),
-        "probs": torch.cat(all_probs),
-    }
 
 
 # -------------------------
@@ -133,7 +89,7 @@ def train_from_config(config_path: Path):
     # Setup paths
     metadata_path = Path(config["metadata_path"])
     output_dir = Path(config["output_dir"])
-    output_dir.mkdir(parents=True, exist_ok=True)
+    ensure_dir(output_dir)
     
     # Copy config and metadata to output dir for persistence
     config_copy_path = output_dir / "config.json"
@@ -194,10 +150,6 @@ def train_from_config(config_path: Path):
         
         # ---- Load + filter data ----
         df = pl.read_parquet(metadata_path)
-        
-        df = df.filter(pl.col("emotion") != "disgust")
-        df = df.filter(pl.col("emotion") != "neutral")
-        df = df.filter(pl.col("n_faces") > 0)
         
         emotions = sorted(df["emotion"].unique().to_list())
         label_map = {e: i for i, e in enumerate(emotions)}
@@ -384,39 +336,11 @@ def train_from_config(config_path: Path):
         preds = outputs["preds"]
         probs = outputs["probs"]
         
-        cm_raw = ConfusionMatrix(
-            task="multiclass",
-            num_classes=len(emotions),
-            normalize=None,
-        )(preds, labels)
-        
         cm_norm = ConfusionMatrix(
             task="multiclass",
             num_classes=len(emotions),
             normalize="true",
         )(preds, labels)
-        
-        # Save confusion matrices
-        cm_raw_path = output_dir / "confusion_matrix_raw.parquet"
-        cm_norm_path = output_dir / "confusion_matrix_normalized.parquet"
-        
-        pl.DataFrame(
-            cm_raw.numpy(),
-            schema=emotions,
-        ).with_columns(
-            pl.Series("true_emotion", emotions)
-        ).write_parquet(cm_raw_path)
-        
-        pl.DataFrame(
-            cm_norm.numpy(),
-            schema=emotions,
-        ).with_columns(
-            pl.Series("true_emotion", emotions)
-        ).write_parquet(cm_norm_path)
-        
-        # Log confusion matrices as artifacts
-        mlflow.log_artifact(str(cm_raw_path))
-        mlflow.log_artifact(str(cm_norm_path))
         
         # Per-class recall
         recalls = cm_norm.diagonal()

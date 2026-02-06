@@ -1,8 +1,8 @@
 {
   "run_name": "pexels-light-v3",
   "data_source": "pexels-v3",
-  "metadata_path": "../data/processed/training_files/pexels_v3.parquet",
-  "output_dir": "../models/pexels_light_aug_v3",
+  "metadata_path": "../data/training_files/pexels_v3_primary.parquet",
+  "output_dir": "../models/pexels_light_aug_v3_prime",
   
   "training": {
     "epochs": 30,
