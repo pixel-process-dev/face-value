@@ -60,12 +60,12 @@ MOVIE_GROUPS = {
 @st.cache_data(show_spinner=False)
 def load_data(file_name):
     base = Path("movie_data")
-    fv = pd.read_parquet(base / "FaceValue" / file_name)
-    raf = pd.read_parquet(base / "RAFDB" / file_name)
+    fv = pd.read_csv(base / "FaceValue" / file_name)
+    raf = pd.read_csv(base / "RAFDB" / file_name)
     return fv, raf
 
-fv_time, raf_time = load_data("all_movies.parquet")
-fv_tidy, raf_tidy = load_data("movie_emotion_summary.parquet")
+fv_time, raf_time = load_data("all_movies.csv")
+fv_tidy, raf_tidy = load_data("movie_emotion_summary.csv")
 
 ALL_MOVIES = sorted(fv_tidy["movie"].unique())
 
