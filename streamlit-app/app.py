@@ -59,7 +59,12 @@ MOVIE_GROUPS = {
 
 @st.cache_data(show_spinner=False)
 def load_data(file_name):
+    import os
+    print("CWD")
+    print(os.getcwd())
     base = Path("./movie_data")
+    print("BASE")
+    print(base)
     fv = pd.read_parquet(base / "FaceValue" / file_name)
     raf = pd.read_parquet(base / "RAFDB" / file_name)
     return fv, raf
