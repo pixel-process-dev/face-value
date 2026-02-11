@@ -59,7 +59,7 @@ MOVIE_GROUPS = {
 
 @st.cache_data(show_spinner=False)
 def load_data(file_name):
-    base = Path("movie_data")
+    base = Path("./movie_data")
     fv = pd.read_parquet(base / "FaceValue" / file_name)
     raf = pd.read_parquet(base / "RAFDB" / file_name)
     return fv, raf
@@ -227,8 +227,8 @@ with tab_overview:
 
     st.markdown("#### Emotion distribution by movie (curated example)")
 
-    fv_comedies = Image.open("images/fv_comedies.png")
-    raf_comedies = Image.open("images/raf_comedies.png")
+    fv_comedies = Image.open("./images/fv_comedies.png")
+    raf_comedies = Image.open("./images/raf_comedies.png")
     l_img, r_img = st.columns(2)
     with l_img:
         st.header("Face Value")
@@ -399,8 +399,8 @@ with tab_insight:
         """
     )
 
-    fv_conf = Image.open("images/FV_pred_conf_by_emo.png")
-    raf_conf = Image.open("images/RAF_pred_conf_by_emo.png")
+    fv_conf = Image.open("./images/FV_pred_conf_by_emo.png")
+    raf_conf = Image.open("./images/RAF_pred_conf_by_emo.png")
     fv_img, raf_img = st.columns(2)
     with fv_img:
         st.header("Face Value")
@@ -420,7 +420,7 @@ with tab_insight:
     st.markdown("---")
 
     st.subheader("Face Value Validation")
-    fv_validation = Image.open("images/fv_val_cm.png")
+    fv_validation = Image.open("./images/fv_val_cm.png")
     st.header("Face Value Validation")
     st.image(fv_validation)
 
@@ -429,8 +429,8 @@ with tab_insight:
 
     st.subheader("Where do models make mistakes?")
 
-    fv_confusion = Image.open("images/fv_raf_test_cm.png")
-    raf_confusion = Image.open("images/raf_raf_test_cm.png")
+    fv_confusion = Image.open("./images/fv_raf_test_cm.png")
+    raf_confusion = Image.open("./images/raf_raf_test_cm.png")
     fv_cm, raf_cm = st.columns(2)
     with fv_cm:
         st.header("Face Value")
