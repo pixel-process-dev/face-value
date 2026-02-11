@@ -1,42 +1,32 @@
 import streamlit as st
-import polars as pl
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
 from pathlib import Path
+from PIL import Image
 
-# ============ GLOBAL EMOTION COLOR PALETTE ============
-EMOTION_COLORS = {
-    "angry": "#E74C3C",      # Red - anger/aggression
-    "fear": "#7F8C8D",       # Gray - uncertainty/fear
-    "happy": "#FFD93D",      # Yellow - joy/happiness
-    "sad": "#4A90E2",        # Blue - sadness/melancholy
-    "surprise": "#9B59B6"    # Purple - unexpected/vibrant
-}
+# =============================================================================
+# PAGE CONFIG
+# =============================================================================
 
-# Page config
 st.set_page_config(
-    page_title="Face Value - Movie Emotion Analysis",
-    layout="wide"
+    page_title="Face Value – Emotion in Movies",
+    layout="wide",
 )
 
-# Load data (cached)
-@st.cache_data
-def load_data(file_name):
-    fv_dir = Path("movie_data/FaceValue")
-    raf_dir = Path("movie_data/RAFDB")
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
 
-    fv_file = fv_dir / file_name
-    raf_file = raf_dir / file_name
+EMOTION_COLORS = {
+    "angry": "#E74C3C",
+    "fear": "#7F8C8D",
+    "happy": "#FFD93D",
+    "sad": "#4A90E2",
+    "surprise": "#9B59B6",
+}
 
-    fv = pd.read_parquet(fv_file)
-    raf = pd.read_parquet(raf_file)
-    return fv, raf
-
-fv_time, raf_time = load_data(file_name="all_movies.parquet")
-fv_tidy, raf_tidy = load_data(file_name="movie_emotion_summary.parquet")
-
-# Movie groupings
+EMOTIONS = ["angry", "fear", "happy", "sad", "surprise"]
 MOVIE_GROUPS = {
     "Featured Selection": [
         "finding_nemo", "airplane", "inside_out", "real_steel",
@@ -51,354 +41,447 @@ MOVIE_GROUPS = {
         "frankenweenie"
     ],
     "Harry Potter Series": [
-        "hp1_sorcerers_stone", "hp2_chamber_of_secrets", 
+        "hp1_sorcerers_stone", "hp2_chamber_of_secrets",
         "hp3_prisoner_of_azkaban", "hp4_goblet_of_fire",
         "hp5_order_phoenix", "hp6_half_blood_prince",
         "hp7_deathly_hallows_part_1", "hp7_deathly_hallows_part_2"
     ],
     "Dark Dramas": [
-        "dark_knight", "dark_knight_rises", "inception", "black_mass",
-        "pulp_fiction", "lucky_number_slevin"
+        "dark_knight", "dark_knight_rises", "inception",
+        "black_mass", "pulp_fiction", "lucky_number_slevin"
     ],
-    "Lord of the Rings": [
-        "lotr_1", "lotr_2", "lotr_3"
-    ],
+    "Lord of the Rings": ["lotr_1", "lotr_2", "lotr_3"],
 }
 
-def prepare_stacked_data(movie_data, movie_list):
-    """Convert movie data to format for stacked bar chart"""
-    # Filter to selected movies
-    filtered = movie_data[movie_data['movie'].isin(movie_list)]
-    perc_cols = ["angry_pct", "fear_pct", "happy_pct", "sad_pct", "surprise_pct"]
-    
-    tidy = pd.melt(filtered, id_vars=["movie"], value_vars=perc_cols,
-        var_name="emotion", value_name="percent")
-    tidy['emotion'] = tidy['emotion'].str.removesuffix('_pct')
-    tidy.sort_values(by=["movie"], inplace=True)
-   
+# =============================================================================
+# DATA LOADING
+# =============================================================================
+
+@st.cache_data(show_spinner=False)
+def load_data(file_name):
+    base = Path("movie_data")
+    fv = pd.read_parquet(base / "FaceValue" / file_name)
+    raf = pd.read_parquet(base / "RAFDB" / file_name)
+    return fv, raf
+
+fv_time, raf_time = load_data("all_movies.parquet")
+fv_tidy, raf_tidy = load_data("movie_emotion_summary.parquet")
+
+ALL_MOVIES = sorted(fv_tidy["movie"].unique())
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def emotion_legend():
+    cols = st.columns(len(EMOTIONS))
+    for i, e in enumerate(EMOTIONS):
+        with cols[i]:
+            st.markdown(
+                f"""
+                <div style="
+                    background:{EMOTION_COLORS[e]};
+                    padding:10px;
+                    border-radius:6px;
+                    text-align:center;
+                    font-weight:600;
+                    color:white;
+                ">
+                    {e.title()}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+def prepare_stacked_data(df, movies):
+    df = df[df["movie"].isin(movies)]
+    tidy = pd.melt(
+        df,
+        id_vars="movie",
+        value_vars=[f"{e}_pct" for e in EMOTIONS],
+        var_name="emotion",
+        value_name="percent",
+    )
+    tidy["emotion"] = tidy["emotion"].str.replace("_pct", "")
+    tidy.sort_values(by="movie", inplace=True)
     return tidy
 
-def create_stacked_bar(tidy, title):
-    """Create stacked bar chart"""
+def stacked_bar(tidy, title):
     fig = px.bar(
         tidy,
         x="movie",
         y="percent",
         color="emotion",
         barmode="stack",
-        color_discrete_map=EMOTION_COLORS,  # Use global colors
+        color_discrete_map=EMOTION_COLORS,
+        category_orders={"emotion": EMOTIONS},
+        height=550,
         title=title,
-        height=600,
-        category_orders={
-            "emotion": ["angry", "fear", "happy", "sad", "surprise"]
-        },
     )
-    
     fig.update_xaxes(tickangle=45)
-    fig.update_layout(
-        showlegend=False,  # Remove legend
-    )
-    
+    fig.update_layout(showlegend=False)
     return fig
 
-def prepare_timeline_data(movie_data, movie_name, confidence_threshold=0.5):
-    """Prepare cumulative emotion counts for timeline plot"""
-    # movie_df = (
-    #     movie_data
-    #     .filter(pl.col("movie") == movie_name)
-    #     .filter(pl.col("confidence") >= confidence_threshold)
-    #     .sort("timestamp_sec")
-    # )
-    movie_df = movie_data[movie_data['movie']==movie_name]
-    movie_df = movie_df[movie_df['confidence']>=confidence_threshold]
-    movie_df.sort_values(by="timestamp_sec", inplace=True)
+def prepare_timeline(df, movie, threshold):
+    df = df[(df["movie"] == movie) & (df["confidence"] >= threshold)].copy()
+    df.sort_values("timestamp_sec", inplace=True)
 
-    if len(movie_df) == 0:
+    if df.empty:
         return None
-    
-    # Create cumulative counts
-    emotions = ["angry", "fear", "happy", "sad", "surprise"]
-    # timeline_data = []
-    # cumulative = {e: 0 for e in emotions}
-    
-    # for row in movie_df.iter_rows(named=True):
-    #     cumulative[row["emotion"]] += 1
-    #     timeline_data.append({
-    #         "timestamp_min": row["timestamp_sec"] / 60,
-    #         **{f"{e}_count": cumulative[e] for e in emotions}
-    #     })
-    # Create cumulative counts for each emotion
-    for emotion in emotions:
-        movie_df[f"{emotion}_count"] = (movie_df["emotion"] == emotion).astype(int).cumsum()
-    
-    # Add timestamp in minutes
-    movie_df["timestamp_min"] = movie_df["timestamp_sec"] / 60
-    
-    # Select only timeline columns
-    timeline_df = movie_df[["timestamp_min"] + [f"{e}_count" for e in emotions]]
 
-    return timeline_df
+    for e in EMOTIONS:
+        df[f"{e}_count"] = (df["emotion"] == e).cumsum()
 
-def create_timeline_plot(timeline_df, movie_name, confidence_threshold):
-    """Create timeline plot with consistent colors"""
-    if timeline_df is None:
-        return None
-    
-    # timeline_pd = timeline_df.to_pandas()
-    
+    df["timestamp_min"] = df["timestamp_sec"] / 60
+    return df
+
+def timeline_plot(df, movie, threshold):
     fig = go.Figure()
-    
-    emotions = ["angry", "fear", "happy", "sad", "surprise"]
-    for emotion in emotions:
-        fig.add_trace(go.Scatter(
-            x=timeline_df["timestamp_min"],
-            y=timeline_df[f"{emotion}_count"],
-            mode="lines",
-            name=emotion,
-            line=dict(color=EMOTION_COLORS[emotion], width=2.5),
-        ))
-    
+    for e in EMOTIONS:
+        fig.add_trace(
+            go.Scatter(
+                x=df["timestamp_min"],
+                y=df[f"{e}_count"],
+                mode="lines+text",
+                line=dict(color=EMOTION_COLORS[e], width=2.5),
+                name=e
+            )
+        )
+
     fig.update_layout(
-        title=f"Emotion Timeline: {movie_name.replace('_', ' ').title()} (confidence ≥ {confidence_threshold})",
+        title=f"{movie.replace('_',' ').title()} (confidence ≥ {threshold})",
         xaxis_title="Time (minutes)",
-        yaxis_title="Cumulative Face Count",
+        yaxis_title="Total faces detected",
         hovermode="x unified",
         height=500,
-        showlegend=False,  # Remove legend
+        showlegend=False,
     )
-    
     return fig
 
-def display_emotion_legend():
-    """Display color legend for emotions"""
-    st.markdown("### Emotion Color Key")
-    
-    cols = st.columns(5)
-    emotions_display = {
-        "angry": "😠 Angry",
-        "fear": "😨 Fear", 
-        "happy": "😊 Happy",
-        "sad": "😢 Sad",
-        "surprise": "😲 Surprise"
+# =============================================================================
+# SESSION STATE
+# =============================================================================
+
+def init_state():
+    defaults = {
+        "compare_group": "Comedies",
+        "compare_movies": MOVIE_GROUPS["Comedies"][:6],
+        "compare_model": "Side-by-side",
+        "timeline_movie": ALL_MOVIES[0],
+        "timeline_model": "Face Value",
+        "timeline_conf": 0.5,
     }
-    
-    for i, (emotion, label) in enumerate(emotions_display.items()):
-        with cols[i]:
-            st.markdown(
-                f'<div style="background-color: {EMOTION_COLORS[emotion]}; '
-                f'padding: 10px; border-radius: 5px; text-align: center; '
-                f'color: {"white" if emotion in ["angry", "fear", "sad", "surprise"] else "black"}; '
-                f'font-weight: bold;">{label}</div>',
-                unsafe_allow_html=True
-            )
+    for k, v in defaults.items():
+        st.session_state.setdefault(k, v)
 
+init_state()
 
-# ============ STREAMLIT UI ============
+# =============================================================================
+# HEADER
+# =============================================================================
 
-st.title("Face Value: Movie Emotion Analysis")
-st.markdown("""
-Compare emotion recognition models on 50+ movies. 
-**Face Value** (weak supervision) vs **RAF-DB** (standard db)
-""")
+st.title("Face Value: Emotion in Movies")
+st.markdown(
+    """
+    This project explores how different emotion recognition models behave
+    when applied to real movies.  
+    Rather than focusing on test accuracy alone, it asks a simpler question:
 
-# Display color legend at top
-display_emotion_legend()
+    **Do model predictions make sense in context?**
+    """
+)
+
+emotion_legend()
 st.markdown("---")
 
-tab1, tab2 = st.tabs(["📊 Movie Comparison", "📈 Timeline Analysis"])
-with tab1:
-    # Sidebar controls
-    st.sidebar.header("Movie Comparison Controls")
+# =============================================================================
+# TABS
+# =============================================================================
 
-    # Model selection
-    model_choice = st.sidebar.radio(
-        "Model(s) to display:",
-        ["Face Value", "RAF-DB", "Side-by-side"],
-        help="View one model or compare both"
+tab_overview, tab_explore, tab_timeline, tab_insight, tab_methods = st.tabs(
+    [
+        "🎬 Overview",
+        "📊 Movie Explorer",
+        "📈 Timeline Stories",
+        "🔍 Model Insight",
+        "🧭 Methods & Limits",
+    ]
+)
+
+# =============================================================================
+# TAB 1 — OVERVIEW (STATIC)
+# =============================================================================
+
+with tab_overview:
+    st.subheader("What does emotion look like across movies?")
+
+    st.markdown(
+        """
+        Below is a comparison of emotion predictions across a small set of
+        well-known **comedy films**.
+
+        Both models analyze the *same movie frames*.  
+        The difference is how they were trained.
+        """
     )
 
-    # Movie group selection
-    st.sidebar.subheader("Movie Selection")
+    st.markdown("#### Emotion distribution by movie (curated example)")
 
-    group_choice = st.sidebar.selectbox(
-        "Choose a preset group:",
-        ["Custom"] + list(MOVIE_GROUPS.keys()),
-        index=1  # Default to "Featured Selection"
+    fv_comedies = Image.open("images/fv_comedies.png")
+    raf_comedies = Image.open("images/raf_comedies.png")
+    l_img, r_img = st.columns(2)
+    with l_img:
+        st.header("Face Value")
+        st.image(fv_comedies)
+    with r_img:
+        st.header("RAF DB")
+        st.image(raf_comedies)
+
+    # st.markdown(
+    #     """
+    #     *Tip:* This should show Face Value and RAF-DB side by side for the
+    #     same group of movies.
+    #     """
+    # )
+
+    st.markdown(
+        """
+        **What to notice:**
+        - Comedies are expected to show a mix of happy, surprise, and lighter emotions
+        - One model tends to collapse toward a single emotion
+        - The other shows broader emotional variety that better matches genre expectations
+        """
     )
 
-    # Get initial movie list based on group
-    if group_choice == "Custom":
-        initial_movies = MOVIE_GROUPS["Featured Selection"][:5]  # Start with 5
-    else:
-        initial_movies = MOVIE_GROUPS[group_choice][:10]  # Max 10
+# =============================================================================
+# TAB 2 — MOVIE EXPLORER (INTERACTIVE)
+# =============================================================================
 
-    # Movie multiselect
-    all_movies = sorted(fv_tidy['movie'].to_list())
-    selected_movies = st.sidebar.multiselect(
-        "Select movies (max 10):",
-        all_movies,
-        default=initial_movies,
-        max_selections=10,
-        format_func=lambda x: x.replace("_", " ").title()
-    )
+with tab_explore:
+    with st.expander("⚙️ Explore settings", expanded=True):
+        c1, c2, c3 = st.columns([1.5, 2, 3])
 
-    # Validation
-    if not selected_movies:
-        st.warning("⚠️ Please select at least one movie")
+        with c1:
+            st.session_state.compare_model = st.radio(
+                "View",
+                ["Face Value", "RAF-DB", "Side-by-side"],
+                horizontal=True,
+                key="compare_model_radio",
+            )
+
+        with c2:
+            st.session_state.compare_group = st.selectbox(
+                "Movie group",
+                list(MOVIE_GROUPS.keys()),
+            )
+
+        with c3:
+            defaults = MOVIE_GROUPS[st.session_state.compare_group]
+            st.session_state.compare_movies = st.multiselect(
+                "Movies",
+                ALL_MOVIES,
+                default=defaults,
+                max_selections=10,
+                format_func=lambda x: x.replace("_", " ").title(),
+            )
+
+    st.markdown("---")
+
+    movies = st.session_state.compare_movies
+    model = st.session_state.compare_model
+
+    if not movies:
+        st.warning("Select at least one movie to continue.")
         st.stop()
 
-    # ============ DISPLAY PLOTS ============
-
-    if model_choice == "Side-by-side":
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("Face Value (weak supervision)")
-            fv_tidy = prepare_stacked_data(fv_tidy, selected_movies)
-            fig_fv = create_stacked_bar(
-                fv_tidy, 
-                "Face Value: Emotion Distribution by Movie"
+    if model == "Side-by-side":
+        l, r = st.columns(2)
+        with l:
+            st.plotly_chart(
+                stacked_bar(
+                    prepare_stacked_data(fv_tidy, movies),
+                    "Face Value",
+                ),
+                width='stretch',
             )
-            st.plotly_chart(fig_fv, use_container_width=True)
-        
-        with col2:
-            st.subheader("RAF-DB (benchmark dataset)")
-            raf_tidy = prepare_stacked_data(raf_tidy, selected_movies)
-            fig_raf = create_stacked_bar(
-                raf_tidy,
-                "RAF-DB: Emotion Distribution by Movie"
+        with r:
+            st.plotly_chart(
+                stacked_bar(
+                    prepare_stacked_data(raf_tidy, movies),
+                    "RAF-DB",
+                ),
+                width='stretch',
             )
-            st.plotly_chart(fig_raf, use_container_width=True)
-
-    elif model_choice == "Face Value":
-        fv_tidy = prepare_stacked_data(fv_tidy, selected_movies)
-        fig = create_stacked_bar(
-            fv_tidy,
-            "Face Value: Emotion Distribution by Movie (Stacked %)"
+    elif model == "Face Value":
+        st.plotly_chart(
+            stacked_bar(
+                prepare_stacked_data(fv_tidy, movies),
+                "Face Value",
+            ),
+            width='stretch',
         )
-        st.plotly_chart(fig, use_container_width=True)
-
-    else:  # RAF-DB
-        raf_tidy = prepare_stacked_data(raf_tidy, selected_movies)
-        fig = create_stacked_bar(
-            raf_tidy,
-            "RAF-DB: Emotion Distribution by Movie (Stacked %)"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    # ============ INSIGHTS ============
-
-    st.markdown("---")
-    st.subheader("💡 What to Notice")
-
-    if group_choice == "Comedies":
-        st.info("""
-        **Comedies** should show higher happy proportions.
-        - Face Value: Detects happy more often in comedies
-        - RAF-DB: Defaults to surprise regardless of genre
-        """)
-    elif group_choice == "Kids Movies":
-        st.info("""
-        **Kids movies** typically have upbeat emotional content.
-        - Face Value: Shows more happy and surprise
-        - RAF-DB: Misses genre-appropriate emotional signals
-        """)
-    elif group_choice == "Dark Dramas":
-        st.info("""
-        **Dark dramas** should show more sad/fear emotions.
-        - Face Value: Captures appropriate negative emotions
-        - RAF-DB: Still dominated by surprise
-        """)
     else:
-        st.info("""
-        Compare the emotional diversity:
-        - **Face Value**: Shows variety across all 5 emotions
-        - **RAF-DB**: Dominated by surprise across most movies
-        """)
+        st.plotly_chart(
+            stacked_bar(
+                prepare_stacked_data(raf_tidy, movies),
+                "RAF-DB",
+            ),
+            width='stretch',
+        )
 
-# ============ TAB 2: TIMELINE ANALYSIS ============
+# =============================================================================
+# TAB 3 — TIMELINE STORIES (INTERACTIVE)
+# =============================================================================
 
-with tab2:
-    st.sidebar.header("Timeline Controls")
-    
-    timeline_model = st.sidebar.radio(
-        "Model(s) to display:",
-        ["Face Value", "RAF-DB", "Side-by-side"],
-        key="timeline_model"
-    )
-    
-    timeline_movie = st.sidebar.selectbox(
-        "Select movie:",
-        sorted(fv_tidy['movie'].to_list()),
-        format_func=lambda x: x.replace("_", " ").title(),
-        key="timeline_movie"
-    )
-    
-    confidence_threshold = st.sidebar.slider(
-        "Minimum confidence:",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.5,
-        step=0.05,
-        help="Filter predictions below this confidence level"
-    )
-    
-    # Generate timeline data
-    if timeline_model == "Side-by-side":
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("Face Value (weak supervision)")
-            fv_timeline = prepare_timeline_data(fv_time, timeline_movie, confidence_threshold)
-            if fv_timeline is not None:
-                fig_fv = create_timeline_plot(fv_timeline, timeline_movie, confidence_threshold)
-                st.plotly_chart(fig_fv, use_container_width=True)
-            else:
-                st.warning("No data available for this movie at selected confidence level")
-        
-        with col2:
-            st.subheader("RAF-DB (benchmark dataset)")
-            raf_timeline = prepare_timeline_data(raf_time, timeline_movie, confidence_threshold)
-            if raf_timeline is not None:
-                fig_raf = create_timeline_plot(raf_timeline, timeline_movie, confidence_threshold)
-                st.plotly_chart(fig_raf, use_container_width=True)
-            else:
-                st.warning("No data available for this movie at selected confidence level")
-    
-    elif timeline_model == "Face Value":
-        fv_timeline = prepare_timeline_data(fv_time, timeline_movie, confidence_threshold)
-        if fv_timeline is not None:
-            fig = create_timeline_plot(fv_timeline, timeline_movie, confidence_threshold)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("No data available for this movie at selected confidence level")
-    
-    else:  # RAF-DB
-        raf_timeline = prepare_timeline_data(raf_time, timeline_movie, confidence_threshold)
-        if raf_timeline is not None:
-            fig = create_timeline_plot(raf_timeline, timeline_movie, confidence_threshold)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("No data available for this movie at selected confidence level")
-    
-    # Key moments (optional - you can add specific movie annotations here)
+with tab_timeline:
+    with st.expander("⚙️ Timeline settings", expanded=True):
+        c1, c2, c3 = st.columns([1.5, 2.5, 2])
+
+        with c1:
+            st.session_state.timeline_model = st.radio(
+                "View",
+                ["Face Value", "RAF-DB", "Side-by-side"],
+                horizontal=True,
+                key="timeline_model_radio",
+            )
+
+        with c2:
+            st.session_state.timeline_movie = st.selectbox(
+                "Movie",
+                ALL_MOVIES,
+                format_func=lambda x: x.replace("_", " ").title(),
+            )
+
+        with c3:
+            st.session_state.timeline_conf = st.slider(
+                "Minimum confidence",
+                0.0, 1.0, st.session_state.timeline_conf, 0.05
+            )
+
     st.markdown("---")
-    st.subheader("🎬 Key Observations")
-    
-    key_moments = {
-        "finding_nemo": "Reunion at ~84 minutes - watch for happy surge",
-        "real_steel": "Redemption arc begins ~90 minutes",
-        "inside_out": "Joy leaves headquarters ~27 minutes",
-        "dark_knight": "Joker interrogation scene ~80 minutes",
-    }
-    
-    if timeline_movie in key_moments:
-        st.info(f"**{timeline_movie.replace('_', ' ').title()}**: {key_moments[timeline_movie]}")
 
+    movie = st.session_state.timeline_movie
+    conf = st.session_state.timeline_conf
+    model = st.session_state.timeline_model
+
+    def show_timeline(df):
+        data = prepare_timeline(df, movie, conf)
+        if data is None:
+            st.warning("No data available at this confidence level.")
+        else:
+            st.plotly_chart(
+                timeline_plot(data, movie, conf),
+                width='stretch',
+            )
+
+    if model == "Side-by-side":
+        l, r = st.columns(2)
+        with l:
+            show_timeline(fv_time)
+        with r:
+            show_timeline(raf_time)
+    elif model == "Face Value":
+        show_timeline(fv_time)
+    else:
+        show_timeline(raf_time)
+
+# =============================================================================
+# TAB 4 — MODEL INSIGHT (STATIC)
+# =============================================================================
+
+with tab_insight:
+    st.subheader("How confident are the models?")
+
+    st.markdown(
+        """
+        These figures look at *how confident* each model is when it predicts
+        different emotions.
+        """
+    )
+
+    fv_conf = Image.open("images/FV_pred_conf_by_emo.png")
+    raf_conf = Image.open("images/RAF_pred_conf_by_emo.png")
+    fv_img, raf_img = st.columns(2)
+    with fv_img:
+        st.header("Face Value")
+        st.image(fv_conf)
+    with raf_img:
+        st.header("RAF DB")
+        st.image(raf_conf)
+
+    st.markdown(
+        """
+        **Key idea:**  
+        Higher confidence does not automatically mean better real-world behavior.
+        Confidence distributions reveal bias, collapse, and calibration issues.
+        """
+    )
+
+    st.markdown("---")
+
+    st.subheader("Face Value Validation")
+    fv_validation = Image.open("images/fv_val_cm.png")
+    st.header("Face Value Validation")
+    st.image(fv_validation)
+
+
+    st.markdown("---")
+
+    st.subheader("Where do models make mistakes?")
+
+    fv_confusion = Image.open("images/fv_raf_test_cm.png")
+    raf_confusion = Image.open("images/raf_raf_test_cm.png")
+    fv_cm, raf_cm = st.columns(2)
+    with fv_cm:
+        st.header("Face Value")
+        st.image(fv_confusion)
+    with raf_cm:
+        st.header("RAF DB")
+        st.image(raf_confusion)
+
+# =============================================================================
+# TAB 5 — METHODS & LIMITS (STATIC)
+# =============================================================================
+
+with tab_methods:
+    st.subheader("How this works (and where it breaks)")
+
+    st.markdown(
+        """
+        This project uses a **weak supervision** approach:
+        images are collected using emotion-related keywords rather than manual labels.
+
+        Faces are detected automatically, and models are trained using standard
+        deep learning tools.
+        """
+    )
+
+    st.markdown(
+        """
+        **Important limitations:**
+        - No ground truth for movie emotions
+        - Some emotions are over-represented
+        - Timeline interpretation is qualitative
+        - Models are not intended for production use
+        """
+    )
+
+    st.markdown(
+        """
+        The goal is not perfect accuracy, but **meaningful patterns** in realistic settings.
+        """
+    )
+
+# =============================================================================
+# FOOTER
+# =============================================================================
 
 # Footer
 st.markdown("---")
 st.markdown("""
-📊 [View on GitHub](https://github.com/yourusername/face-value) | 
-📝 [Read the full analysis](https://pixelprocess.org)
-""")
+<div style='text-align: center; color: #666; padding: 20px;'>
+    <p>Built by <a href='https://pixelprocess.org' target='_blank'>PixelProcess</a> | 
+    Part of <a href='https://dexterousdata.com' target='_blank'>Dexterous Data</a><br>
+    <a href='https://github.com/pixel-process-dev/face-value' target='_blank'>View Source on GitHub</a>
+</div>
+""", unsafe_allow_html=True)
